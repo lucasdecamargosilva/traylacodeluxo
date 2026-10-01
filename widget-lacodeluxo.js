@@ -684,6 +684,8 @@
             font-family: var(--font-body); font-size: 20px; font-weight: 700;
             color: var(--c-ink); line-height: 1.25; margin-bottom: 6px;
         }
+        .q-result-oldprice { text-decoration: line-through; opacity: .55; font-weight: 400; font-size: .8em; }
+        .q-result-pixtxt { font-size: .62em; font-weight: 600; color: #1a7f37; white-space: nowrap; }
         .q-result-prodprice {
             font-family: var(--font-display); font-size: 28px; letter-spacing: .5px; font-weight: 700;
             color: var(--c-ink); line-height: 1;
@@ -1016,7 +1018,45 @@
     // troque para '/comprar/' por '/carrinho' (1 linha) — é o único ponto a validar ao vivo.
     var Q_CHECKOUT_URL = '/comprar/';
 
+    // Tray: o preço da página fica em #variacaoPreco (muda com a variação escolhida),
+    // o "de" em #precoDe e as parcelas em #info_preco. O "no pix com 3% OFF" é um
+    // ::after do CSS do tema em cima de #variacaoPreco.
+    function plTrayPreco() {
+        var v = document.getElementById('variacaoPreco');
+        var t = v ? (v.textContent || '').replace(/\s+/g, ' ').trim() : '';
+        return /\d/.test(t) ? 'R$ ' + t.replace(/^R\$\s*/, '') : '';
+    }
+    function plTrayPrecoDe() {
+        var d = document.getElementById('precoDe');
+        var t = d ? (d.textContent || '').replace(/\s+/g, ' ').replace(/^\s*De\s*/i, '').trim() : '';
+        return /\d/.test(t) ? t.replace(/R\$\s*/, 'R$ ') : '';
+    }
+    function plTrayPixTxt() {
+        var v = document.getElementById('variacaoPreco');
+        if (!v) return '';
+        try {
+            var c = getComputedStyle(v, '::after').content || '';
+            c = c.replace(/^["']|["']$/g, '').trim();
+            return /pix/i.test(c) ? c : '';
+        } catch (e) { return ''; }
+    }
+    function plTrayParcela() {
+        var box = document.getElementById('info_preco');
+        if (!box) return '';
+        var txt = (box.textContent || '').replace(/\s+/g, ' ');
+        var re = /(\d+)\s*x\s*de\s*R\$\s*([\d.]+,\d{2})\s*(sem juros|com juros)?/gi, m, livre = null, qualquer = null;
+        while ((m = re.exec(txt))) {
+            var n = parseInt(m[1], 10); if (n < 2) continue;
+            var it = { n: n, v: m[2], sj: /sem/i.test(m[3] || '') };
+            if (!qualquer || n > qualquer.n) qualquer = it;
+            if (it.sj && (!livre || n > livre.n)) livre = it;
+        }
+        var b = livre || qualquer;
+        return b ? (b.n + 'x de R$ ' + b.v + (b.sj ? ' sem juros' : '')) : '';
+    }
+
     function getMainPrice() {
+        var tray = plTrayPreco(); if (tray) return tray;
         // 1) preço exibido na página (vários temas Nuvemshop)
         var sel = '.js-price-display, [data-product-price], .product__price .price, .js-product-price, .price-display, [class*="sellingPriceValue"], [class*="sellingPrice"] [class*="currencyContainer"]';
         var el = document.querySelector(sel);
@@ -1141,6 +1181,7 @@
     // Parcelamento — o MESMO da pagina: pega a MAIOR parcela do produto ("em ate Nx de R$ X").
     // Le do data-variants (mesma fonte do preco). installments_data vem como STRING JSON aninhada.
     function getInstallment() {
+        var tray = plTrayParcela(); if (tray) return tray;
         var dv = document.querySelector('[data-variants]');
         if (!dv) return '';
         try {
@@ -1178,7 +1219,19 @@
         var nameEl = document.getElementById('q-result-prodname');
         var priceEl = document.getElementById('q-result-prodprice');
         if (nameEl) nameEl.textContent = (prodName || '').trim();
-        if (priceEl) priceEl.textContent = price || '';
+        if (priceEl) {
+            priceEl.textContent = '';
+            var de = plTrayPrecoDe(), pixTxt = plTrayPixTxt();
+            if (de && price && de !== price) {
+                var old = document.createElement('span'); old.className = 'q-result-oldprice'; old.textContent = de;
+                priceEl.appendChild(old); priceEl.appendChild(document.createTextNode(' '));
+            }
+            priceEl.appendChild(document.createTextNode(price || ''));
+            if (pixTxt && price) {
+                var px = document.createElement('span'); px.className = 'q-result-pixtxt'; px.textContent = ' ' + pixTxt;
+                priceEl.appendChild(px);
+            }
+        }
         var instEl = document.getElementById('q-result-installment');
         if (instEl) { var _inst = getInstallment(); instEl.textContent = _inst; instEl.style.display = _inst ? 'block' : 'none'; }
         if (info && ((prodName || '').trim() || price)) info.style.display = 'block';
