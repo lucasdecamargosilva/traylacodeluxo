@@ -236,14 +236,14 @@
            secundario em relacao ao comprar. */
         .q-btn-inline-provador {
             display: flex; align-items: center; justify-content: center; gap: 9px;
-            width: 100%; height: 39px; padding: 0 16px;
-            background: transparent; color: #2C3E50;
-            border: 1px solid #2C3E50; border-radius: 50px;
+            width: 100%; height: 56px; padding: 0 16px;
+            background: transparent; color: #000;
+            border: 1px solid #000; border-radius: 0; /* retangular e da altura do COMPRAR */
             font-size: 17px; font-weight: 400; letter-spacing: normal; text-transform: none;
             cursor: pointer; transition: background 0.25s, color 0.25s;
             margin-bottom: 0; box-sizing: border-box;
         }
-        .q-btn-inline-provador:hover { background: #2C3E50; color: #fff; }
+        .q-btn-inline-provador:hover { background: #000; color: #fff; }
         .q-btn-inline-provador svg { width: 18px; height: 18px; flex-shrink: 0; }
 
         /* ── Modal overlay ── */
