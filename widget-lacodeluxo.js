@@ -1055,6 +1055,45 @@
         return b ? (b.n + 'x de R$ ' + b.v + (b.sj ? ' sem juros' : '')) : '';
     }
 
+
+    // Escolhe a foto "de estúdio" entre as da galeria: a que tem a borda mais lisa
+    // (fundo de uma cor só). Empate/erro => mantém a 1ª. Tempo máximo ~2,5 s.
+    function plFotoEstudio(urls) {
+        var lista = [];
+        (urls || []).forEach(function (u) { var k = String(u || '').split('?')[0]; if (u && !lista.some(function (x) { return String(x).split('?')[0] === k; })) lista.push(u); });
+        lista = lista.slice(0, 6);
+        if (lista.length < 2) return Promise.resolve(lista[0] || '');
+        function nota(u) {
+            return new Promise(function (ok) {
+                var img = new Image(); img.crossOrigin = 'anonymous';
+                var fim = setTimeout(function () { ok(null); }, 2500);
+                img.onload = function () {
+                    clearTimeout(fim);
+                    try {
+                        var W = 60, H = Math.max(1, Math.round(60 * img.naturalHeight / img.naturalWidth));
+                        var c = document.createElement('canvas'); c.width = W; c.height = H;
+                        var g = c.getContext('2d'); g.drawImage(img, 0, 0, W, H);
+                        var d = g.getImageData(0, 0, W, H).data, px = [];
+                        for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+                            if (y < H * 0.12 || x < W * 0.1 || x > W * 0.9) { var i = (y * W + x) * 4; px.push([d[i], d[i + 1], d[i + 2]]); }
+                        }
+                        var m = [0, 1, 2].map(function (k) { return px.reduce(function (a, p) { return a + p[k]; }, 0) / px.length; });
+                        var v = px.reduce(function (a, p) { return a + Math.pow(p[0] - m[0], 2) + Math.pow(p[1] - m[1], 2) + Math.pow(p[2] - m[2], 2); }, 0) / px.length;
+                        // foto deitada (detalhe/close) não serve de referência de corpo inteiro
+                        ok(img.naturalHeight >= img.naturalWidth ? v : null);
+                    } catch (e) { ok(null); }
+                };
+                img.onerror = function () { clearTimeout(fim); ok(null); };
+                img.src = u;
+            });
+        }
+        return Promise.all(lista.map(nota)).then(function (n) {
+            var melhor = 0;
+            n.forEach(function (v, i) { if (v != null && (n[melhor] == null || v < n[melhor] * 0.6)) melhor = i; });
+            return lista[melhor];
+        });
+    }
+
     function getMainPrice() {
         var tray = plTrayPreco(); if (tray) return tray;
         // 1) preço exibido na página (vários temas Nuvemshop)
@@ -2260,7 +2299,13 @@
                     return;
                 }
 
-                const prodImg = (userPickedPhoto && selectedProductImgUrl) || plVariantImage() || selectedProductImgUrl || (document.querySelector('meta[property="og:image"]')?.content || '');
+                let prodImg = (userPickedPhoto && selectedProductImgUrl) || plVariantImage() || selectedProductImgUrl || (document.querySelector('meta[property="og:image"]')?.content || '');
+                // Laço de Luxo: a IA de roupa usa UMA foto só. A 1ª da galeria costuma ser
+                // de rua (modelo de lado, cabelo/braço/bolsa na frente) e o decote saía
+                // errado. Sem escolha da cliente nem foto de variante, usa a de estúdio.
+                if (!userPickedPhoto && !plVariantImage()) {
+                    try { prodImg = (await plFotoEstudio([prodImg].concat(extractImages()))) || prodImg; } catch (e) {}
+                }
                 const prodName = plNomeProduto();
 
                 uploadStep.style.display = 'none';
