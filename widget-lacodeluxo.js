@@ -1294,11 +1294,12 @@
                     if ((pos === 'fixed' || pos === 'sticky') && hr.top <= 8 && hr.height > 20 && hr.bottom > _hb) _hb = hr.bottom;
                 }
             } catch (e) {}
-            var _topSelo = r.top + 14;
+            // Laço de Luxo: a etiqueta de desconto (-10%) fica no canto de cima; o selo desce pra não cobrir
+            var _topSelo = r.top + 62;
             if (r.bottom < 40 || r.top > window.innerHeight - 40 || _topSelo < _hb + 6) { openBtn.style.visibility = 'hidden'; }
             else {
                 openBtn.style.visibility = 'visible';
-                openBtn.style.top = (r.top + 14) + 'px';
+                openBtn.style.top = (r.top + 62) + 'px';
                 openBtn.style.left = (r.right - tam - 14) + 'px';
             }
             return true;
