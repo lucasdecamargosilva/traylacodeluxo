@@ -1456,8 +1456,8 @@
         inlineBtn.style.alignItems = 'center';
         inlineBtn.style.justifyContent = 'center';
         inlineBtn.style.alignSelf = 'stretch';
-        inlineBtn.style.height = '39px';       // mesma altura do botao "Comprar pelo Whats"
-        inlineBtn.style.borderRadius = '50px'; // mesmo pill do COMPRAR
+        inlineBtn.style.height = '56px';       // Laço de Luxo: mesma altura do COMPRAR
+        inlineBtn.style.borderRadius = '0';    // retangular como o COMPRAR
         inlineBtn.style.margin = '12px 0 0';   // respiro logo abaixo do COMPRAR
         // O botao de compra pode ser montado DEPOIS do init(), entao
         // a insercao unica falhava no primeiro acesso (so aparecia apos F5).
